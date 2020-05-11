@@ -1,0 +1,11 @@
+version: '3.4'
+services:
+    ixia-mink:
+        build: .
+        container_name: "ixia-mink"
+        ports:
+            - "80:80"
+        volumes:
+            - ../web/:/var/www/html/
+        env_file:
+            - variables.env

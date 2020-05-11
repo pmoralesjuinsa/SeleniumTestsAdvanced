@@ -1,0 +1,25 @@
+{
+  "name": "ruben-garcia-gjuinsa/ixia-mink",
+  "require-dev": {
+    "php": "^7.4",
+    "behat/behat": "^3.6.1",
+    "behat/mink": "^1.8.1",
+    "behat/mink-extension": "^2.3.1",
+    "behat/mink-goutte-driver": "^1.2.1",
+    "behat/mink-selenium2-driver": "^1.4.0"
+  },
+  "minimum-stability": "stable",
+  "autoload": {
+    "psr-4": {
+      "ixiaMink\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Test\\": "test/"
+    }
+  },
+  "config": {
+    "bin-dir": "bin"
+  }
+}
