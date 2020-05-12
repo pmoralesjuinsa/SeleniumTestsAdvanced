@@ -19,9 +19,13 @@ services:
             - "4444:4444"
 
     ixia-mink-chrome:
-        image: selenium/node-chrome:3.11.0-dysprosium
+        #DEBUG VNC password: secret
+#        image: selenium/node-chrome:3.11.0-dysprosium
+        image: selenium/node-chrome-debug:3.11.0-dysprosium
         depends_on:
             - ixia-mink-selenium-hub
+        ports:
+            - "5900:5900"
         environment:
             - HUB_HOST=ixia-mink-selenium-hub
             - HUB_PORT=4444
