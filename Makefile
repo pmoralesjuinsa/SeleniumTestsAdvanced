@@ -1,4 +1,4 @@
-PHP_CONTAINER=ixia_mink
+PHP_CONTAINER=ixia-mink
 
 composer-install:
 	@docker exec -it $(PHP_CONTAINER) bash -c "composer install"

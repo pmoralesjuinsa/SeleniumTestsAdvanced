@@ -1,7 +1,7 @@
 version: '3.4'
 services:
     ixia-mink:
-        build: .
+        build: Php
         container_name: "ixia-mink"
         ports:
             - "80:80"
@@ -9,3 +9,19 @@ services:
             - ../web/:/var/www/html/
         env_file:
             - variables.env
+        depends_on:
+            - ixia-mink-selenium-hub
+
+    ixia-mink-selenium-hub:
+        image: selenium/hub:3.11.0-dysprosium
+        container_name: "ixia-mink-selenium-hub"
+        ports:
+            - "4444:4444"
+
+    ixia-mink-chrome:
+        image: selenium/node-chrome:3.11.0-dysprosium
+        depends_on:
+            - ixia-mink-selenium-hub
+        environment:
+            - HUB_HOST=ixia-mink-selenium-hub
+            - HUB_PORT=4444

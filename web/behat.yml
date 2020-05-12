@@ -7,3 +7,6 @@ default:
     extensions:
         Behat\MinkExtension:
             goutte: ~
+            selenium2:
+                wd_host: "http://ixia-mink-selenium-hub:4444/wd/hub"
+                browser: chrome

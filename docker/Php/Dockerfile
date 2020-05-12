@@ -18,8 +18,6 @@ RUN docker-php-ext-install zip
 
 #XDEBUG
 RUN pecl install xdebug
-#Activar sólo para debug, cuando no se vaya a usar dejar desactivado
-#RUN docker-php-ext-enable xdebug
 RUN echo 'xdebug.remote_port=9000\n\
     xdebug.remote_enable=1\n\
     xdebug.remote_connect_back=1\n\
@@ -38,5 +36,8 @@ RUN useradd -u 1000 docker \
     && echo "docker ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers
 
 USER 1000:1000
+
+#Activar sólo para debug, cuando no se vaya a usar dejar desactivado
+#RUN docker-php-ext-enable xdebug
 
 CMD sudo apache2-foreground
