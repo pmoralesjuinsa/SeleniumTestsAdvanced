@@ -30,6 +30,27 @@ RUN echo 'xdebug.remote_port=9000\n\
 
 RUN apt-get -y install sudo
 
+#MAIL FUNCITON
+#RUN apt-get install ssmtp
+## set recommended PHP.ini settings
+## see https://secure.php.net/manual/en/opcache.installation.php
+#RUN { \
+#                echo 'opcache.memory_consumption=128'; \
+#                echo 'opcache.interned_strings_buffer=8'; \
+#                echo 'opcache.max_accelerated_files=4000'; \
+#                echo 'opcache.revalidate_freq=2'; \
+#                echo 'opcache.fast_shutdown=1'; \
+#                echo 'opcache.enable_cli=1'; \
+#        } &gt; /usr/local/etc/php/conf.d/opcache-recommended.ini
+## and adding a php.ini with the senmail path to ssmtp
+#RUN echo 'sendmail_path = /usr/sbin/ssmtp -t' &gt;&gt; /usr/local/etc/php/php.ini
+## now copy the local ssmtp.conf file
+#COPY ssmtp.conf /etc/ssmtp/ssmtp.conf
+#
+## Apache Module aktivieren
+#RUN a2enmod rewrite expires
+#END MAIL FUNCTION
+
 RUN useradd -u 1000 docker \
     && adduser docker sudo \
     && adduser docker root \

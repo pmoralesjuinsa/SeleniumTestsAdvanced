@@ -21,5 +21,8 @@
   },
   "config": {
     "bin-dir": "bin"
+  },
+  "require": {
+    "sebbmeyer/php-microsoft-teams-connector": "^0.1.3"
   }
 }

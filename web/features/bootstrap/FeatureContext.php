@@ -1,5 +1,6 @@
 <?php
 
+use Behat\Mink\Driver\Selenium2Driver;
 use Behat\MinkExtension\Context\RawMinkContext;
 use Behat\Behat\Hook\Scope\AfterStepScope;
 
@@ -8,6 +9,8 @@ use Behat\Behat\Hook\Scope\AfterStepScope;
  */
 class FeatureContext extends RawMinkContext
 {
+    const INCOMING_WEBHOOK_URL = "https://outlook.office.com/webhook/8021965b-be03-4db1-86b0-86f119a04aab@bc76e231-c566-4b3a-84f1-18fc504b041d/IncomingWebhook/fe1e88ded8304a88a59e13c900c65b1e/eb4754e8-89ee-4d89-b478-906f3b4b4aa5";
+
     /**
      * Initializes context.
      *
@@ -36,6 +39,7 @@ class FeatureContext extends RawMinkContext
 
         $element->click();
     }
+
     /**
      * @Given /^(?:|I )hover over the element with css selector "(?P<selector>.*)"$/
      */
@@ -59,7 +63,8 @@ class FeatureContext extends RawMinkContext
     public function takeScreenshotAfterFailedStep(AfterStepScope $scope)
     {
         if (99 === $scope->getTestResult()->getResultCode()) {
-            $this->iTakeAScreenshot('failStep');
+            $filePath = $this->iTakeAScreenshot('failStep');
+            $this->sendNotifyToTeams($filePath, $scope->getFeature()->getTitle(), $scope->getStep()->getText());
         }
     }
 
@@ -81,7 +86,8 @@ class FeatureContext extends RawMinkContext
 
         if (!$this->driverSupportsJavascript()) {
             $fileExtension = '.txt';
-            file_put_contents(sprintf('%s-%s', $screenFolder, $fileName . $fileExtension), $this->getSession()->getPage()->getOuterHtml());
+            file_put_contents(sprintf('%s-%s', $screenFolder, $fileName . $fileExtension),
+                $this->getSession()->getPage()->getOuterHtml());
             return;
         }
 
@@ -89,14 +95,16 @@ class FeatureContext extends RawMinkContext
         $file_and_path = $screenFolder . $fileName . '_screenshot' . $fileExtension;
         $fileCreated = file_put_contents($file_and_path, $image_data);
 
-        $this->mailNotify($fileCreated, $file_and_path, $fileName . $fileExtension);
+//        $this->mailNotify($fileCreated, $file_and_path, $fileName . $fileExtension);
+
+        return $file_and_path;
     }
 
     public function mailNotify($fileCreated, $fileAndPath, $filename)
     {
-        $to      = 'pedromorales@grupojuinsa.es';
-        $title    = 'Fallo de algún test';
-        $message   = 'Ha ocurrido un error en algún test. Adjunto archivo con captura.';
+        $to = 'pedromorales@grupojuinsa.es';
+        $title = 'Fallo de algún test';
+        $message = 'Ha ocurrido un error en algún test. Adjunto archivo con captura.';
         $headers = 'From: pedromorales@grupojuinsa.es' . "\r\n" .
             'Reply-To: pedromorales@grupojuinsa.es' . "\r\n" .
             'X-Mailer: PHP/' . phpversion();
@@ -117,6 +125,41 @@ class FeatureContext extends RawMinkContext
 //        }
 
         @mail($to, $title, $message, $headers);
+    }
+
+    public function sendNotifyToTeams($imagePath, $feature, $step)
+    {
+        $type = pathinfo($imagePath, PATHINFO_EXTENSION);
+        $data = file_get_contents($imagePath);
+        $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+
+        // create connector instance
+        $connector = new \Sebbmyr\Teams\TeamsConnector(self::INCOMING_WEBHOOK_URL);
+        // create card
+        $card = new CustomCard([
+            'title' => 'Simple custom card title',
+            'sections' => [
+                'text' => 'Ha ocurrido un error en el siguiente test:',
+                'facts' => [
+                    'feature' => $feature,
+                    'step' => $step,
+                    'image' => $base64
+                ]
+            ]
+        ]);
+        // send card via connector
+        $connector->send($card);
+    }
+
+    /**
+     * @BeforeScenario
+     */
+    public function beforeScenario()
+    {
+        if ($this->getSession()->getDriver() instanceof Selenium2Driver) {
+            $this->getMink()->getSession()->start();
+            $this->getSession()->resizeWindow(420, 390, 'current');
+        }
     }
 
 }
