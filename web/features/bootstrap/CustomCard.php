@@ -28,6 +28,10 @@ class CustomCard extends Card
                             "value" => $this->data['sections']['facts']["feature"]
                         ],
                         [
+                            "name" => "Scenario:",
+                            "value" => $this->data['sections']['facts']["scenario"]
+                        ],
+                        [
                             "name" => "Step",
                             "value" => $this->data['sections']['facts']["step"]
                         ]

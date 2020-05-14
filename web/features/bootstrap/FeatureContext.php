@@ -138,7 +138,7 @@ class FeatureContext extends RawMinkContext
     {
         if ($this->getSession()->getDriver() instanceof Selenium2Driver) {
             $this->getMink()->getSession()->start();
-            $this->getSession()->resizeWindow(200, 200, 'current');
+            $this->getSession()->resizeWindow(1024, 1024, 'current');
         }
     }
 

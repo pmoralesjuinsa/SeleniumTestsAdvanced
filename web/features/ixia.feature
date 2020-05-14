@@ -4,7 +4,7 @@ Feature: Ixia feature
     Given I am on "https://ixia.es/"
     Then the response status code should be 200
 
-  @javascript
+  @javascript @comprar
   Scenario: Buy a product on ixia
     Given I am on "https://ixia.es/"
       And I click on the element with css selector ".header__top--right > .account-buttons > a:nth-child(1)"
