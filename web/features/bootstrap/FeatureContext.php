@@ -64,7 +64,7 @@ class FeatureContext extends RawMinkContext
     {
         if (99 === $scope->getTestResult()->getResultCode()) {
             $fileInfo = $this->iTakeAScreenshot('failStep');
-            $this->mailNotify($fileInfo['fileCreated'], $fileInfo['fileAndPath'], $fileInfo['fileName'], $fileInfo['fileExtension']);
+//            $this->mailNotify($fileInfo['fileCreated'], $fileInfo['fileAndPath'], $fileInfo['fileName'], $fileInfo['fileExtension']);
             $this->sendNotifyToTeams($fileInfo, $scope->getFeature()->getTitle(), $scope->getStep()->getText());
         }
     }
@@ -205,11 +205,11 @@ class FeatureContext extends RawMinkContext
     {
         $base64 = '';
 
-        if ($fileInfo['fileExtension'] == '.png') {
-            $type = pathinfo($fileInfo['fileAndPath'], PATHINFO_EXTENSION);
-            $data = file_get_contents($fileInfo['fileAndPath']);
-            $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
-        }
+//        if ($fileInfo['fileExtension'] == '.png') {
+//            $type = pathinfo($fileInfo['fileAndPath'], PATHINFO_EXTENSION);
+//            $data = file_get_contents($fileInfo['fileAndPath']);
+//            $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+//        }
 
         return $base64;
     }
