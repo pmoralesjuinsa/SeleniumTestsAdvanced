@@ -3,3 +3,7 @@ lanzar manualmente un fichero de test:
  
 lanzar sólo los pings:
     bin/behat --tags ping
+
+Instalar librería para teams:
+
+    composer require sebbmeyer/php-microsoft-teams-connector
