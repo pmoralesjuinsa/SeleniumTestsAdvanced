@@ -63,8 +63,9 @@ class FeatureContext extends RawMinkContext
     public function takeScreenshotAfterFailedStep(AfterStepScope $scope)
     {
         if (99 === $scope->getTestResult()->getResultCode()) {
-            $filePath = $this->iTakeAScreenshot('failStep');
-            $this->sendNotifyToTeams($filePath, $scope->getFeature()->getTitle(), $scope->getStep()->getText());
+            $fileInfo = $this->iTakeAScreenshot('failStep');
+            $this->mailNotify($fileInfo['fileCreated'], $fileInfo['fileAndPath'], $fileInfo['fileName'], $fileInfo['fileExtension']);
+            $this->sendNotifyToTeams($fileInfo, $scope->getFeature()->getTitle(), $scope->getStep()->getText());
         }
     }
 
@@ -82,25 +83,16 @@ class FeatureContext extends RawMinkContext
     {
         $screenFolder = __DIR__ . '/../../screenshots/';
         $fileName = $name . date('YmdHis');
-        $fileExtension = '.png';
+        $fileInfo['fileExtension'] = '.png';
 
         if (!$this->driverSupportsJavascript()) {
-            $fileExtension = '.txt';
-            file_put_contents(sprintf('%s-%s', $screenFolder, $fileName . $fileExtension),
-                $this->getSession()->getPage()->getOuterHtml());
-            return;
+            return $this->makeHtmlFile($fileInfo, $fileName, $screenFolder);
         }
 
-        $image_data = $this->getSession()->getDriver()->getScreenshot();
-        $file_and_path = $screenFolder . $fileName . '_screenshot' . $fileExtension;
-        $fileCreated = file_put_contents($file_and_path, $image_data);
-
-//        $this->mailNotify($fileCreated, $file_and_path, $fileName . $fileExtension);
-
-        return $file_and_path;
+        return $this->makePngImage($fileName, $fileInfo, $screenFolder);
     }
 
-    public function mailNotify($fileCreated, $fileAndPath, $filename)
+    public function mailNotify($fileCreated, $fileAndPath, $filename, $fileExtension)
     {
         $to = 'pedromorales@grupojuinsa.es';
         $title = 'Fallo de algún test';
@@ -109,35 +101,22 @@ class FeatureContext extends RawMinkContext
             'Reply-To: pedromorales@grupojuinsa.es' . "\r\n" .
             'X-Mailer: PHP/' . phpversion();
 
-//        if($fileCreated !== false) {
-//            $semi_rand = md5(time());
-//            $mime_boundary = "==Multipart_Boundary_x{$semi_rand}x";
-//
-//            // preparing attachments
-//            $file = fopen($fileAndPath,"rb");
-//            $data = fread($file,filesize($fileAndPath));
-//            fclose($file);
-//            $data = chunk_split(base64_encode($data));
-//            $message .= "Content-Type: {\"application/octet-stream\"};\n" . " name=\"".$filename."\"\n" .
-//                "Content-Disposition: attachment;\n" . " filename=\"$filename\"\n" .
-//                "Content-Transfer-Encoding: base64\n\n" . $data . "\n\n";
-//            $message .= "--{$mime_boundary}--\n";
-//        }
+        if($fileCreated !== false && $fileAndPath && $filename && $fileExtension == '.png') {
+            $this->addImageToMail($fileAndPath, $filename, $message);
+        }
 
         @mail($to, $title, $message, $headers);
     }
 
-    public function sendNotifyToTeams($imagePath, $feature, $step)
+    public function sendNotifyToTeams($fileInfo, $feature, $step)
     {
-        $type = pathinfo($imagePath, PATHINFO_EXTENSION);
-        $data = file_get_contents($imagePath);
-        $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+        $base64 = $this->returnBase64IfFileExtensionIsImage($fileInfo);
 
         // create connector instance
         $connector = new \Sebbmyr\Teams\TeamsConnector(self::INCOMING_WEBHOOK_URL);
         // create card
         $card = new CustomCard([
-            'title' => 'Simple custom card title',
+            'title' => 'Error al ejecutar Test',
             'sections' => [
                 'text' => 'Ha ocurrido un error en el siguiente test:',
                 'facts' => [
@@ -147,6 +126,7 @@ class FeatureContext extends RawMinkContext
                 ]
             ]
         ]);
+
         // send card via connector
         $connector->send($card);
     }
@@ -158,8 +138,80 @@ class FeatureContext extends RawMinkContext
     {
         if ($this->getSession()->getDriver() instanceof Selenium2Driver) {
             $this->getMink()->getSession()->start();
-            $this->getSession()->resizeWindow(420, 390, 'current');
+            $this->getSession()->resizeWindow(200, 200, 'current');
         }
+    }
+
+    /**
+     * @param $fileInfo
+     * @param $fileName
+     * @param $screenFolder
+     * @return mixed
+     */
+    protected function makeHtmlFile($fileInfo, $fileName, $screenFolder)
+    {
+        $fileInfo['fileExtension'] = '.html';
+        $fileInfo['fileName'] = $fileName . $fileInfo['fileExtension'];
+        $fileInfo['fileAndPath'] = sprintf('%s-%s', $screenFolder, $fileInfo['fileName']);
+        $fileInfo['fileCreated'] = file_put_contents($fileInfo['fileAndPath'],
+            $this->getSession()->getPage()->getOuterHtml());
+        return $fileInfo;
+    }
+
+    /**
+     * @param $fileName
+     * @param $fileInfo
+     * @param $screenFolder
+     * @return mixed
+     * @throws \Behat\Mink\Exception\DriverException
+     * @throws \Behat\Mink\Exception\UnsupportedDriverActionException
+     */
+    protected function makePngImage($fileName, $fileInfo, $screenFolder)
+    {
+        $image_data = $this->getSession()->getDriver()->getScreenshot();
+        $fileInfo['fileName'] = $fileName . '_screenshot' . $fileInfo['fileExtension'];
+        $fileInfo['fileAndPath'] = $screenFolder . $fileInfo['fileName'];
+        $fileInfo['fileCreated'] = file_put_contents($fileInfo['fileAndPath'], $image_data);
+
+        return $fileInfo;
+    }
+
+    /**
+     * @param $fileAndPath
+     * @param $filename
+     * @param $message
+     */
+    protected function addImageToMail($fileAndPath, $filename, &$message)
+    {
+        $semi_rand = md5(time());
+        $mime_boundary = "==Multipart_Boundary_x{$semi_rand}x";
+
+        // preparing attachments
+        $file = fopen($fileAndPath, "rb");
+        $data = fread($file, filesize($fileAndPath));
+        fclose($file);
+        $data = chunk_split(base64_encode($data));
+        $message .= "Content-Type: {\"application/octet-stream\"};\n" . " name=\"" . $filename . "\"\n" .
+            "Content-Disposition: attachment;\n" . " filename=\"$filename\"\n" .
+            "Content-Transfer-Encoding: base64\n\n" . $data . "\n\n";
+        $message .= "--{$mime_boundary}--\n";
+    }
+
+    /**
+     * @param $fileInfo
+     * @return string
+     */
+    protected function returnBase64IfFileExtensionIsImage($fileInfo)
+    {
+        $base64 = '';
+
+        if ($fileInfo['fileExtension'] == '.png') {
+            $type = pathinfo($fileInfo['fileAndPath'], PATHINFO_EXTENSION);
+            $data = file_get_contents($fileInfo['fileAndPath']);
+            $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+        }
+
+        return $base64;
     }
 
 }
